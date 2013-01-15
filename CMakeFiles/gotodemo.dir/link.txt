@@ -1,0 +1,1 @@
+/usr/bin/c++    -O3 -DNDEBUG -Wall       -L/usr/local/lib -lplayerc++ -lplayerc -lm -lz -lplayerinterface -lplayerwkb -lplayercommon -lpthread CMakeFiles/gotodemo.dir/matt.o  -o matt -rdynamic ../../code/libstagewrapper.so.3.0.3 -L/usr/local/lib -lplayerc++ -lplayerc -lm -lz -lplayerinterface -lplayerwkb -lplayercommon -lpthread -Wl,-rpath,/home/alfmunny/TAS_wrapper/code 
