@@ -86,7 +86,10 @@ int main(int argc, char *argv[]) {
 	//parameter
 	BlobColorType color1 = GREEN;
 	BlobColorType color2 = RED;
+	BlobColorType color = GREEN;
 	playerc_blobfinder_blob_t blob;
+	playerc_blobfinder_blob_t blob1;
+	playerc_blobfinder_blob_t blob2;
 
 	// Enable motors
 	pp2d->powerUp();
@@ -98,52 +101,150 @@ int main(int argc, char *argv[]) {
 	//2-dimensional array of search points
 	clock_t start, finish;
 	double duration = 0;
-	double startX = -1.0;
-	double startY = -1.0;
-	double searchPoint[5][2] = {{startX,startY},{1,-1},{1,1},{-1,1},{-1,0}};
+	double startX = args->startX;
+	double startY = args->startY;
+	//double searchPoint[4][2] = {{startX,startY},{1,-1},{1,1},{-1,1}};
+	double searchPoint[3][2] = {{startX,startY},{-1.5,1.5},{-1.5,-1.5}};
+	double goalX = 0;
+	double goalY = 0;
+	double phi = 0;
+	bool flag = 0;
 
 	int pointNum = 0;
+	//int  windowWidth = 0;
 
 	// main loop
 
-	while( pointNum < 5 )
+	while( pointNum < 3 )
 	{
 		duration = 0;
 		start = clock();
-		while(!pbf->blobFound(color1)&&!pbf->blobFound(color2)&&duration<5)
-		{
-			cout << "No Blob! Searching!" << endl;
-			pp2d->setSpeed(0,0.5);
-			pm->waitForData();
-			finish = clock();
-			duration = ((double)(finish - start))/10000;
-			printf("%f seconds\n", duration);
-		}
-		pp2d->stop();
+		flag = 0;
 
-		if(pbf->blobFound(color1)||pbf->blobFound(color2))
-		//if(false)
+		//if the roboter on the start positon, just turn 1/4 circle
+		if(abs(pp2d->getXPos()-startX)<0.2&&abs(pp2d->getYPos()-startY)<0.2)
 		{
-			while(pbf->blobFound(color1)||pbf->blobFound(color2))
+			pp2d->goToPose(startX,startY,DTOR(-90));
+			while(!pp2d->getReached())
 			{
-				pbf->getBiggestBlob(color1, blob);
-				cout << blob.x << "\t" << blob.y << "\t" <<(int) blob.area << endl;
+				pm->waitForData();
+			}
+			//while(!pbf->blobFound(color1)&&!pbf->blobFound(color2)&&duration<1)
+			cout << "No Blob! Searching!" << endl;
+			pp2d->goToPose(startX,startY,DTOR(-180));
+			while(!pp2d->getReached())
+			{
+				pm->waitForData();
+				if(pbf->blobFound(color1)||pbf->blobFound(color2))
+				{
+					flag = 1;
+					break;
+				}
+			}
+			pp2d->stop();
+		}
+
+		//if the roboter on the start positon, turn 1 circle
+		else
+		{
+			while(duration<5)
+			{
+				cout << "No Blob! Searching!" << endl;
+				pp2d->setSpeed(0,0.5);
+				pm->waitForData();
+				finish = clock();
+				duration = ((double)(finish - start))/10000;
+				printf("%f seconds\n", duration);
+
+				if(pbf->blobFound(color1)||pbf->blobFound(color2))
+				{
+					if(pbf->blobFound(color1))
+					{
+						pbf->getBiggestBlob(color1, blob);
+						if(blob.range<sqrt((startX-pp2d->getXPos())*(startX-pp2d->getXPos())+(startY-pp2d->getYPos())*(startY-pp2d->getYPos())))
+						{
+							flag = 1;
+							break;
+						}
+
+					}
+
+					if(pbf->blobFound(color2))
+					{
+						pbf->getBiggestBlob(color2, blob);
+						if(blob.range<sqrt((startX-pp2d->getXPos())*(startX-pp2d->getXPos())+(startY-pp2d->getYPos())*(startY-pp2d->getYPos())))
+						{
+							flag = 1;
+							break;
+						}
+
+					}
+				}
+			}
+			pp2d->stop();
+		}
+
+		if((pbf->blobFound(color1)||pbf->blobFound(color2))&&flag)
+			//if(false)
+		{
+			if(pbf->blobFound(color1)&&!pbf->blobFound(color2))
+				color = color1;
+			if(pbf->blobFound(color2)&&!pbf->blobFound(color1))
+				color = color2;
+			if(pbf->blobFound(color1)&&pbf->blobFound(color2)) 
+			{
+				pbf->getBiggestBlob(color1, blob1);
+				pbf->getBiggestBlob(color2, blob2);
+				if(blob1.range<blob2.range)
+					color = color1;
+				else
+					color = color2;
+
+			}
+			pbf->getBiggestBlob(color, blob);
+			//int blobwidth = (int) (blob.left - blob.right);
+			//windowWidth = pbf->getWindowWidth();
+			//cout << windowWidth << blob.x << "\t" << blob.y << "\t" << blob.area << "\t" << blob.left << "\t" << blob.right << "\t" << abs(blobwidth) << "\t" << blob.range << endl;
+			while((int) blob.x != 40)
+			{
+				pbf->getBiggestBlob(color, blob);
 				if ((int) blob.x < 35)
 					pp2d->setSpeed(0, 1);
 				else if ((int) blob.x > 45)
 					pp2d->setSpeed(0, -0.13);
-				else
+				//cout << blob.x << "\t" << blob.range << endl;
+			}
+			//else
+			goalX = pp2d->getXPos() + cos(pp2d->getPhi()-0.02506)*(blob.range+0.063);
+			goalY = pp2d->getXPos() + sin(pp2d->getPhi()-0.02506)*(blob.range+0.063);
+			phi = pp2d->getPhi()-0.02506;
+			cout << "Blob found! Moving towards!" << endl;
+			cout << "range\t" << blob.range << endl;
+			cout << "phi\t" << DTOR(phi) << endl;
+			cout << "cos\t" << cos(phi) << endl;
+			cout << "sin\t" << sin(phi) << endl;
+			cout << "x\t" << goalX << endl;
+			cout << "y\t" << goalY << endl;
+
+			try{
+				pplan->goToPosition(goalX, goalY);
+			} catch (ePlannerError e) {
+				handle_plannererror(e);
+			}
+
+			while(!pplan->getReached())
+			{
+				if(pg->getInnerBreakBeam())
 				{
-					cout << "Blob found! Moving towards!" << endl;
-					pp2d->setSpeed(0.2,0);
-				}
-				if(pg->getOuterBreakBeam())
-				{
-					pp2d->setSpeed(0.2,0);
-					sleep(1);
+					//pp2d->setSpeed(0.12,0);
+					//sleep(0.5);
+					cout << "touch blob" << endl;
+					//sleep(0.5);
+					pplan->abortGoTo();
 					break;
 				}
 			}
+
 			pp2d->stop();
 			pg->close();
 			while(!pg->getClose())
@@ -152,7 +253,7 @@ int main(int argc, char *argv[]) {
 				sleep(1);
 			}
 			pg->moveUp();
-			while (pg->getPos() !=1)
+			while (!pg->getPos())
 			{
 				printf("lift moving up\n");
 				sleep(1);
@@ -166,42 +267,32 @@ int main(int argc, char *argv[]) {
 			//}
 			//bring it back to start position
 			pplan->goToPosition(startX, startY);
+			//			pplan->goToPosition(startX, startY);
+			cout << "plan to home" << endl;
 
 			while(!pplan->getReached())
 			{
 				pm->waitForData();
-				cout<< pp2d->getPhi() << "\t" << pp2d->getXPos() << "\t" <<pp2d->getYPos() << endl;
+				//cout<< pp2d->getPhi() << "\t" << pp2d->getXPos() << "\t" <<pp2d->getYPos() << endl;
 			}
 
 			cout<< "Attention!!" << endl;
+			cout << "start to put down" << endl;
 
 			pp2d->stop();
-			pp2d->goToPose(startX,startY,DTOR(180));
+			pp2d->goToPose(startX,startY,DTOR(45));
 			while(!pp2d->getReached())
 			{
+				pm->waitForData();
 				//cout<< pp2d->getPhi() << "\t" << pp2d->getXPos() << "\t" <<pp2d->getYPos() << endl;
 				//cout << "not" << endl;
-				if (pp2d->getPhi() < -3) 
-				{	
-		   			pp2d->setSpeed(0.0, -0.12);
-					sleep(1);
-					break;
-				}	
-
-				if (pp2d->getPhi() > 3) 
-				{	
-		   			pp2d->setSpeed(0.0, 0.12);
-					sleep(1);
-					break;
-				}	
 			}
 
 			pp2d->stop();
 			cout<< pp2d->getPhi() << "\t" << pp2d->getXPos() << "\t" <<pp2d->getYPos() << endl;
-			while(1)
-			{
 
-			}
+			pp2d->setSpeed(0.1,0);
+			sleep(3);
 
 			printf("lift moving down\n");
 			pg->moveDown();
@@ -209,83 +300,36 @@ int main(int argc, char *argv[]) {
 			pg->open();
 
 			cout << "Backing off..." << endl;
-			pp2d->setSpeed(-0.1,0);
-			sleep(2);
+			pp2d->setSpeed(-0.15,0);
+			sleep(3);
+			pp2d->stop();
 
 			cout << "Job's done!"<< endl;
-			pp2d->setSpeed(0, DTOR(-90));
-			sleep(1);
-			pp2d->setSpeed(0, 0);
-
 			pplan->goToPosition(searchPoint[pointNum][0], searchPoint[pointNum][1]);
 
 			while(!pplan->getReached())
 			{
+				cout << "go to position" << endl;
 				pm->waitForData();
 			}
 		}
 
 		//find no Blob
 
-//		if(!pbf->blobFound(color1)&&!pbf->blobFound(color2))
+		//		if(!pbf->blobFound(color1)&&!pbf->blobFound(color2))
 		else
 		{
-			cout << "no blob! Let's go to next point!\n" << endl;
 			//next position
 			pointNum = pointNum + 1; 	
+			if(pointNum > 2)
+				break;
+			cout << "go to " << pointNum+1 <<". position" << endl;
 			pplan->goToPosition(searchPoint[pointNum][0], searchPoint[pointNum][1]);
 			while(!pplan->getReached())
 			{
-				//find the position on the road
-				if(pbf->blobFound(color1)||pbf->blobFound(color2))
-				{
-					pplan->abortGoTo();
-					//bringBlobBack(startX,startY);
-					while (true)
-					{
-						pbf->getBiggestBlob(color1, blob);
-
-						cout << blob.x << "\t" <<(int) blob.area << endl;
-						if ((int) blob.x < 35)
-							pp2d->setSpeed(0, 0.13);
-						else if ((int) blob.x > 45)
-							pp2d->setSpeed(0, -0.13);
-						else
-						{
-							cout << "Blob found! Moving towards!" << endl;
-							pp2d->setSpeed(0.2,0);
-						}
-						if(pg->getOuterBreakBeam())
-							break;
-					}
-					pp2d->stop();
-					//try to grab
-					rm->grabPuck(color1);
-					while(!rm->grabFinished())
-					{
-						pm->waitForData();
-					}
-					//bring it back to start position
-					pplan->goToPosition(startX, startY);
-
-					while(!pplan->getReached())
-					{
-						pm->waitForData();
-					}
-
-					pp2d->stop();
-					pg->moveDown();
-					pg->open();
-
-					cout << "Backing off..." << endl;
-					pp2d->setSpeed(-0.1,0);
-					sleep(2);
-
-					cout << "Job's done!"<< endl;
-				}
 				pm->waitForData();
-
 			}
+
 		}	
 	}
 
