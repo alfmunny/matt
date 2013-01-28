@@ -6,5 +6,5 @@ CXX_FLAGS =  -O3 -DNDEBUG -Wall   -I/home/alfmunny/TAS_wrapper/. -I/home/alfmunn
 
 CXX_DEFINES = 
 
-# Custom flags: demo/matt/CMakeFiles/gotodemo.dir/matt.o_FLAGS =  -I/usr/local/include/player-3.1
+# Custom flags: demo/matt/CMakeFiles/gotodemo.dir/matt.o_FLAGS =  -I/usr/local/include/player-3.0
 

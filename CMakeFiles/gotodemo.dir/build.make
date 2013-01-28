@@ -53,15 +53,15 @@ demo/matt/CMakeFiles/gotodemo.dir/matt.o: demo/matt/CMakeFiles/gotodemo.dir/flag
 demo/matt/CMakeFiles/gotodemo.dir/matt.o: demo/matt/matt.cpp
 	$(CMAKE_COMMAND) -E cmake_progress_report /home/alfmunny/TAS_wrapper/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object demo/matt/CMakeFiles/gotodemo.dir/matt.o"
-	cd /home/alfmunny/TAS_wrapper/demo/matt && /usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS)  -I/usr/local/include/player-3.1 -o CMakeFiles/gotodemo.dir/matt.o -c /home/alfmunny/TAS_wrapper/demo/matt/matt.cpp
+	cd /home/alfmunny/TAS_wrapper/demo/matt && /usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS)  -I/usr/local/include/player-3.0 -o CMakeFiles/gotodemo.dir/matt.o -c /home/alfmunny/TAS_wrapper/demo/matt/matt.cpp
 
 demo/matt/CMakeFiles/gotodemo.dir/matt.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/gotodemo.dir/matt.i"
-	cd /home/alfmunny/TAS_wrapper/demo/matt && /usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS)  -I/usr/local/include/player-3.1 -E /home/alfmunny/TAS_wrapper/demo/matt/matt.cpp > CMakeFiles/gotodemo.dir/matt.i
+	cd /home/alfmunny/TAS_wrapper/demo/matt && /usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS)  -I/usr/local/include/player-3.0 -E /home/alfmunny/TAS_wrapper/demo/matt/matt.cpp > CMakeFiles/gotodemo.dir/matt.i
 
 demo/matt/CMakeFiles/gotodemo.dir/matt.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/gotodemo.dir/matt.s"
-	cd /home/alfmunny/TAS_wrapper/demo/matt && /usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS)  -I/usr/local/include/player-3.1 -S /home/alfmunny/TAS_wrapper/demo/matt/matt.cpp -o CMakeFiles/gotodemo.dir/matt.s
+	cd /home/alfmunny/TAS_wrapper/demo/matt && /usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS)  -I/usr/local/include/player-3.0 -S /home/alfmunny/TAS_wrapper/demo/matt/matt.cpp -o CMakeFiles/gotodemo.dir/matt.s
 
 demo/matt/CMakeFiles/gotodemo.dir/matt.o.requires:
 .PHONY : demo/matt/CMakeFiles/gotodemo.dir/matt.o.requires

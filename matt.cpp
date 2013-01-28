@@ -68,8 +68,10 @@ int main(int argc, char *argv[]) {
 	PlayerManager *pm = new PlayerManager(10, args->playerHostname, args->playerPort, args->verbosity);
 
 	// Create PositionDevice
-	PlayerPosition2D *pp2d = new PlayerPosition2D(pm, POSITION2D_INDEX, VFH_POSE_INDEX, POSITION2D_INDEX,
-			args->verbosity);
+	//PlayerPosition2D *pp2d = new PlayerPosition2D(pm, POSITION2D_INDEX, VFH_POSE_INDEX, AMCL_LOCALIZE_INDEX, args->verbosity);
+	//PlayerPosition2D *pp2d = new PlayerPosition2D(pm, POSITION2D_INDEX, VFH_POSE_INDEX, POSITION2D_INDEX, args->verbosity);
+	PlayerPosition2D *pp2d = new PlayerPosition2D(pm, POSITION2D_INDEX, VFH_POSE_INDEX, VFH_POSITION_INDEX, args->verbosity);
+
 	PlayerLaser pl(pm, LASER_INDEX, args->verbosity);
 
 	PlayerBlobfinder *pbf = new PlayerBlobfinder(pm, BLOBFINDER_INDEX, args->verbosity);
@@ -79,13 +81,18 @@ int main(int argc, char *argv[]) {
 	// Create MapDevice
 	PlayerMap *pmap = new PlayerMap(pm, 0, args->verbosity);
 	// Create PlannerDevice
-	PlayerPlanner *pplan = new PlayerPlanner(pm, pp2d, pmap, POSITION2D_INDEX, true, args->verbosity, 0.3);
+	//PlayerPlanner *pplan = new PlayerPlanner(pm, pp2d, pmap, POSITION2D_INDEX, true, args->verbosity, 0.3);
+
+//	PlayerLocalization *ploc = new PlayerLocalization(pm, pp2d, 100, AMCL_LOCALIZE_INDEX, args->verbosity);
+
+	PlayerPlanner *pplan = new PlayerPlanner(pm, pp2d, pmap, AMCL_LOCALIZE_INDEX, true, args->verbosity, 0.3);
 
 	RobotManipulation *rm = new RobotManipulation(pm, pp2d, pg, pbf, ptz, args->verbosity);
 
 	//parameter
 	BlobColorType color1 = GREEN;
 	BlobColorType color2 = RED;
+	BlobColorType color3 = BLUE;
 	BlobColorType color = GREEN;
 	playerc_blobfinder_blob_t blob;
 	playerc_blobfinder_blob_t blob1;
@@ -95,7 +102,14 @@ int main(int argc, char *argv[]) {
 	pp2d->powerUp();
 	// Initialize Odometry to (0,0,0)
 	pp2d->setOdometry(args->startX, args->startY, DTOR(args->startPhi));
-	//cout << "plocpos\t" << pose[0] << "\t" << pose[1] << std::endl;
+	pg->moveDown();
+	pg->open();
+	//double pose[100][3] = {};
+	//cout << ploc->getHypothCount() << endl;
+	//ploc->localize(pp2d, pose);
+	//ploc->getHypoth(1, pose);
+
+	//cout << "plocpos\t" << pose[0] << "\t" << pose[1] << "\t" << pose[2] << std::endl;
 	cout << "pp2dpos\t" << pp2d->getXPos() << "\t" << pp2d->getYPos() << std::endl;
 
 	//2-dimensional array of search points
@@ -104,7 +118,7 @@ int main(int argc, char *argv[]) {
 	double startX = args->startX;
 	double startY = args->startY;
 	//double searchPoint[4][2] = {{startX,startY},{1,-1},{1,1},{-1,1}};
-	double searchPoint[3][2] = {{startX,startY},{-1.5,1.5},{-1.5,-1.5}};
+	double searchPoint[3][2] = {{startX,startY},{-1.3,1.3},{-1.5,-1.5}};
 	double goalX = 0;
 	double goalY = 0;
 	double phi = 0;
@@ -135,10 +149,33 @@ int main(int argc, char *argv[]) {
 			while(!pp2d->getReached())
 			{
 				pm->waitForData();
-				if(pbf->blobFound(color1)||pbf->blobFound(color2))
+				if((pbf->blobFound(color1)||pbf->blobFound(color2)))
 				{
+					if(pbf->blobFound(color1))
+					{
 					flag = 1;
 					break;
+					}
+					if(pbf->blobFound(color2)&&!pbf->blobFound(color3))
+					{
+						pbf->getBiggestBlob(color2, blob);
+						cout << blob.top << endl;
+						cout << blob.bottom << endl;
+						cout << blob.right << endl;
+						cout << blob.left << endl;
+						flag = 1;
+						break;
+					}
+					if(pbf->blobFound(color2)&&pbf->blobFound(color3))
+					{
+						pbf->getBiggestBlob(color2, blob1);
+						pbf->getBiggestBlob(color3, blob2);
+						if(abs(blob1.range-blob2.range)>1)
+						{
+							flag = 1;
+							break;
+						}
+					}
 				}
 			}
 			pp2d->stop();
@@ -150,7 +187,7 @@ int main(int argc, char *argv[]) {
 			while(duration<5)
 			{
 				cout << "No Blob! Searching!" << endl;
-				pp2d->setSpeed(0,0.5);
+				pp2d->setSpeed(0,0.3);
 				pm->waitForData();
 				finish = clock();
 				duration = ((double)(finish - start))/10000;
@@ -174,8 +211,11 @@ int main(int argc, char *argv[]) {
 						pbf->getBiggestBlob(color2, blob);
 						if(blob.range<sqrt((startX-pp2d->getXPos())*(startX-pp2d->getXPos())+(startY-pp2d->getYPos())*(startY-pp2d->getYPos())))
 						{
+							if((blob.top-blob.bottom)/(blob.right-blob.left)>1)
+							{
 							flag = 1;
 							break;
+							}
 						}
 
 					}
@@ -206,25 +246,34 @@ int main(int argc, char *argv[]) {
 			//windowWidth = pbf->getWindowWidth();
 			//cout << windowWidth << blob.x << "\t" << blob.y << "\t" << blob.area << "\t" << blob.left << "\t" << blob.right << "\t" << abs(blobwidth) << "\t" << blob.range << endl;
 			while((int) blob.x != 40)
+			//while((int) blob.x != 320)
+			//while((int) blob.x != 320)
 			{
 				pbf->getBiggestBlob(color, blob);
 				if ((int) blob.x < 35)
-					pp2d->setSpeed(0, 1);
+				//if ((int) blob.x < 300)
+					pp2d->setSpeed(0, 0.13);
+				//else if ((int) blob.x > 350)
 				else if ((int) blob.x > 45)
-					pp2d->setSpeed(0, -0.13);
-				//cout << blob.x << "\t" << blob.range << endl;
+					pp2d->setSpeed(0, -0.12);
+				cout << blob.x << "\t" << blob.y << "\t" << (int)blob.range << endl;
 			}
 			//else
 			goalX = pp2d->getXPos() + cos(pp2d->getPhi()-0.02506)*(blob.range+0.063);
-			goalY = pp2d->getXPos() + sin(pp2d->getPhi()-0.02506)*(blob.range+0.063);
+			//goalX = pp2d->getXPos() + cos(pp2d->getPhi()-0.02506)*(0.81);
+			goalY = pp2d->getYPos() + sin(pp2d->getPhi()-0.02506)*(blob.range+0.063);
+			//goalY = pp2d->getYPos() + sin(pp2d->getPhi()-0.02506)*(0.81);
 			phi = pp2d->getPhi()-0.02506;
 			cout << "Blob found! Moving towards!" << endl;
+			cout << "top\t" << blob.top<< endl;
+			cout << "bottom\t" << blob.bottom<< endl;
 			cout << "range\t" << blob.range << endl;
 			cout << "phi\t" << DTOR(phi) << endl;
 			cout << "cos\t" << cos(phi) << endl;
 			cout << "sin\t" << sin(phi) << endl;
 			cout << "x\t" << goalX << endl;
 			cout << "y\t" << goalY << endl;
+		//	cout << ploc->getHypothCount() << endl;
 
 			try{
 				pplan->goToPosition(goalX, goalY);
@@ -234,6 +283,7 @@ int main(int argc, char *argv[]) {
 
 			while(!pplan->getReached())
 			{
+				sleep(2);
 				if(pg->getInnerBreakBeam())
 				{
 					//pp2d->setSpeed(0.12,0);
@@ -325,7 +375,9 @@ int main(int argc, char *argv[]) {
 				break;
 			cout << "go to " << pointNum+1 <<". position" << endl;
 			pplan->goToPosition(searchPoint[pointNum][0], searchPoint[pointNum][1]);
+			//pp2d->goToPosition(searchPoint[pointNum][0], searchPoint[pointNum][1]);
 			while(!pplan->getReached())
+			//while(!pp2d->getReached())
 			{
 				pm->waitForData();
 			}
